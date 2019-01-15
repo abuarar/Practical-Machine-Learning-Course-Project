@@ -1,0 +1,120 @@
+---
+title: "Reproducible Research Course Project 2"
+author: "Mohammad Abuarar"
+date: "July 18, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+# Loading Required Libraries
+```{r Loading_Libraries, echo=TRUE,cache=TRUE}
+library(dplyr)
+library(formatR)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = FALSE)
+```
+
+
+# Storms and other weather events harmful effects on public health and economic consequences:
+* Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+
+# Analysis Synopsis:
+* The basic goal of this assignment is to explore the NOAA Storm Database and answer some basic questions about severe weather events. You must use the database to answer the questions below and show the code for your entire analysis. Your analysis can consist of tables, figures, or other summaries. You may use any R package you want to support your analysis.
+
+* Questions
+Your data analysis must address the following questions: \n
+1. Across the United States, which types of events (as indicated in the **EVTYPE** variable) are most harmful with respect to population health?
+2. Across the United States, which types of events have the greatest economic consequences?
+
+* Consider writing your report as if it were to be read by a government or municipal manager who might be responsible for preparing for severe weather events and will need to prioritize resources for different types of events. However, there is no need to make any specific recommendations in your report.
+
+
+# Data Processing:
+* The data for this assignment come in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size. You can download the file from the course web site:
+[Storm Data (47Mb)](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+There is also some documentation of the database available. Here you will find how some of the variables are constructed/defined.
+
+* National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+## Data Getting
+* The file can be downloaded from the following URL:"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2" , preferably into the working directory.
+StormData will be the data we will rely on to answer the questions 
+```{r Data_Getting, cache=TRUE}
+StormData<-read.csv("./repdata%2Fdata%2FStormData.csv",sep = ",")
+head(StormData)
+```
+
+## Data Processing
+* The CSV file contains a lot of unnecessary variables to our question , so we will subset the required variables of Event type , Fatalities count , Injuries count , Property damage cost and Crops damage cost.
+* Also we need to find replace the suitable "Exponential" and replace symbols with corresponding numerical exponential to find net damage cost in both properties and corps.
+* EXP mapping determined by checking [(NOAA) Storm Database](https://www.ncdc.noaa.gov/stormevents/choosedates.jsp?statefips=-999%2CALL)
+```{r Data_Processing, cache=TRUE}
+StormDataForQuestion<-StormData[,c("EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+#Subsetting required variable to answer assignement question
+StormDataForQuestion<-filter(StormDataForQuestion,PROPDMG != 0 | CROPDMG != 0 | FATALITIES != 0 | INJURIES != 0)
+#Removing events of no effect at all  on population or economy (harmless events)
+unique(StormDataForQuestion$PROPDMGEXP)
+#Show PROPDMGEXP catagories
+StormDataForQuestion$PROPDMGEXP<-as.character(StormDataForQuestion$PROPDMGEXP)
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP=="B"]<-1000000000
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP=="m"|StormDataForQuestion$PROPDMGEXP=="M"]<-1000000
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP=="K"]<-1000
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP=="h"|StormDataForQuestion$PROPDMGEXP=="H"]<-100
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP=="+"]<-1
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP=="?"|StormDataForQuestion$PROPDMGEXP=="-"|StormDataForQuestion$PROPDMGEXP==""]<-0
+StormDataForQuestion$PROPDMGEXP[StormDataForQuestion$PROPDMGEXP %in% 0:8]<-10
+StormDataForQuestion$PROPDMGEXP<-as.numeric(StormDataForQuestion$PROPDMGEXP)
+#Replace PROPDMGEXP symbol with numerical value
+unique(StormDataForQuestion$CROPDMGEXP)
+#Show CROPDMGEXP catagories
+StormDataForQuestion$CROPDMGEXP<-as.character(StormDataForQuestion$CROPDMGEXP)
+StormDataForQuestion$CROPDMGEXP[StormDataForQuestion$CROPDMGEXP=="B"]<-1000000000
+StormDataForQuestion$CROPDMGEXP[StormDataForQuestion$CROPDMGEXP=="m"|StormDataForQuestion$CROPDMGEXP=="M"]<-1000000
+StormDataForQuestion$CROPDMGEXP[StormDataForQuestion$CROPDMGEXP=="k"|StormDataForQuestion$CROPDMGEXP=="K"]<-1000
+StormDataForQuestion$CROPDMGEXP[StormDataForQuestion$CROPDMGEXP=="?"|StormDataForQuestion$CROPDMGEXP==""]<-0
+StormDataForQuestion$CROPDMGEXP[StormDataForQuestion$CROPDMGEXP %in% c(0,2)]<-10
+StormDataForQuestion$CROPDMGEXP<-as.numeric(StormDataForQuestion$CROPDMGEXP)
+#Replace CROPDMGEXP symbol with numerical value
+StormDataForQuestion<-mutate(StormDataForQuestion,PROPDMGNET=PROPDMG*PROPDMGEXP)
+StormDataForQuestion<-mutate(StormDataForQuestion,CROPDMGNET=CROPDMG*CROPDMGEXP)
+#Adding Net calculation of PROPDMGNET , CROPDMGNET
+StormQA<-aggregate(StormDataForQuestion[,c(2,3,8,9)], by = list(StormDataForQuestion$EVTYPE),sum)
+names(StormQA)[1]<-"EVTYPE"
+#Assigment Question Answers
+```
+
+# Results:
+## Graphs
+* After preparing the data toward answering required question , StormQA data frame contains our direct goal of this analysis
+* for that we will show results as figures that answers the questions 1 & 2 , and explain which are : 
+1. Events with Highest Fatalities
+2. Events with Highest Injuries
+3. Events with Highest Property Damage Cost
+4. Events with Highest Corps Damage Cost
+```{r Results_graphs, cache=TRUE}
+par(mfrow=c(1,2))
+HighestFATALITIES<-StormQA[order(-StormQA$FATALITIES),c(1,2)]
+barplot(height = HighestFATALITIES$FATALITIES[1:10]/1000 , col = c(1:10) , names.arg = HighestFATALITIES$EVTYPE[1:10] , main = "Events with Highest Fatalities" , ylab = "Fatalities (in Thousand Lives)" , las=2 , cex.names = 0.6)
+HighestINJURIES<-StormQA[order(-StormQA$INJURIES),c(1,3)]
+barplot(height = HighestINJURIES$INJURIES[1:10]/1000 , col = c(1:10) , names.arg = HighestINJURIES$EVTYPE[1:10] , main = "Events with Highest Injuries" , ylab = "Injuries (in Thousand Injuries" , las=2 , cex.names = 0.6)
+par(mfrow=c(1,2))
+HighestPROPDMGNET<-StormQA[order(-StormQA$PROPDMGNET),c(1,4)]
+barplot(height = HighestPROPDMGNET$PROPDMGNET[1:10]/1000000000 , col = c(1:10) , names.arg = HighestPROPDMGNET$EVTYPE[1:10] , main = "Events with Highest \n Property Damage" , ylab = "Casualties (in billion USD$)" , las=2 , cex.names = 0.6 , cex = 0.5)
+HighestCROPDMGNET<-StormQA[order(-StormQA$CROPDMGNET),c(1,5)]
+barplot(height = HighestCROPDMGNET$CROPDMGNET[1:10]/1000000000 , col = c(1:10) , names.arg = HighestCROPDMGNET$EVTYPE[1:10] , main = "Events with Highest \n Crops damage" , ylab = "Casualties (in billion USD$)" , las=2 , cex.names = 0.6)
+```
+
+## Summary
+* Summary of severe weather events effect on both public health and economic problems
+```{r Results_summary, cache=TRUE}
+summary(StormQA)
+#Summary of severe weather events effect on both public health and economic problems
+```

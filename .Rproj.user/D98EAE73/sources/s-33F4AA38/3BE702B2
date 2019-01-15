@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547559839426.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3439547138",
+    "id" : "3BE702B2",
+    "lastKnownWriteTime" : 1547560583,
+    "last_content_update" : 1547560583827,
+    "path" : "C:/Users/AbuArar/Desktop/Coursera Data Science/8-Practical Machine Learning/PracticalMachineLearningCourseProject/PracticalMachineLearningCourseProject/PracticalMachineLearningCourseProject.Rmd",
+    "project_path" : "PracticalMachineLearningCourseProject.Rmd",
+    "properties" : {
+        "cursorPosition" : "159,30",
+        "last_setup_crc32" : "33F4AA38bb338d19",
+        "scrollLine" : "128",
+        "tempName" : "Untitled1",
+        "working_dir" : "project"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

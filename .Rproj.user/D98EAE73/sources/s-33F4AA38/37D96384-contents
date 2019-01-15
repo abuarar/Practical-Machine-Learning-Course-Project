@@ -4,8 +4,9 @@ subtitle: "Mohammed Abuarar 15-Jan-2019"
 auther: "Mohammed Abuarar 15-Jan-2019"
 output: 
   html_document: 
-    fig_caption: yes
-    keep_md: yes
+    highlight: pygments
+    theme: journal
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}

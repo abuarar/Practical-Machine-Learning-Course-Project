@@ -8,9 +8,7 @@ output:
     keep_md: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
 
 # Background
 
@@ -29,13 +27,42 @@ knitr::opts_chunk$set(echo = TRUE)
 * The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
 
 # Loading necessary packages
-```{r LoadingPackages}
+
+```r
 library(caret)
+```
+
+```
+## Loading required package: lattice
+```
+
+```
+## Loading required package: ggplot2
+```
+
+```r
 library(glmnet)
 ```
 
+```
+## Warning: package 'glmnet' was built under R version 3.5.2
+```
+
+```
+## Loading required package: Matrix
+```
+
+```
+## Loading required package: foreach
+```
+
+```
+## Loaded glmnet 2.0-16
+```
+
 # Getting and Cleaning Data
-```{r GettingCleaningData}
+
+```r
 #Getting data
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = "./training.csv")
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile = "./testing.csv")
@@ -69,7 +96,8 @@ Check course slide 7/8 in Prediction study design for reference:
 * 60% training
 * 20% testing
 * 20% validation
-```{r PredictionStudyDesign}
+
+```r
 inTrain<-createDataPartition(trainingData$classe,p=0.8,list = FALSE)
 # validation size = 20% , training+testing = 80%
 training<-trainingData[inTrain,]
@@ -89,7 +117,8 @@ We have the following models:
 4. RF (Random Forest) --> method="RF"
 5. Boostgbm (Boosting) : Generalized Boosted Regression Models --> method = "gbm"
 6. LDA : Linear discriminant analysis --> method="lda""
-```{r TrainingPredictionModels,results = FALSE}
+
+```r
 ElapsedTimeGLMNET<-system.time(modelGLMNET<-train(classe~.,data = training,method="glmnet",trControl=MyControl,tuneGrid = expand.grid(
 alpha = 0.5,lambda = 0.0003)))[3]
 ElapsedTimeCART<-system.time(modelCART<-train(classe~.,data=training,method="rpart",tuneLength=100,trControl=MyControl))[3]
@@ -103,7 +132,8 @@ ElapsedTimeLDA<-system.time(modelLDA<-train(classe~.,data=training,method="lda",
 1. Predicting validation set (using each model)
 2. Getting accuracy of each model by comparing (classe) prediction to real values in validation$calsse using Confusion matrix.  
 3. Creating comparison table between models to Evaluate the models we used.
-```{r PredictionValidationComparison}
+
+```r
 #Predicting validation set (using each model)
 predGLMNET<-predict(modelGLMNET, validation)
 predCART<-predict(modelCART, validation)
@@ -125,23 +155,50 @@ ModelType<-c("glmnet","CART","treebag","RF","gbm","LDA")
 ElapsedTime<-c(ElapsedTimeGLMNET, ElapsedTimeCART, ElapsedTimetreebag, ElapsedTimeRF, ElapsedTimeBoostgbm, ElapsedTimeLDA)
 ModelsTable<-data.frame(ModelType,Accuracy,ElapsedTime)
 ModelsTable
+```
 
+```
+##   ModelType  Accuracy ElapsedTime
+## 1    glmnet 0.7425440      259.48
+## 2      CART 0.9592149       11.69
+## 3   treebag 0.9959215       28.91
+## 4        RF 0.9979607      158.03
+## 5       gbm 0.9882743      198.44
+## 6       LDA 0.7160336        1.14
+```
+
+```r
 gtime<-ggplot(data = ModelsTable, aes(x=ModelType,y=ElapsedTime))
 gaccuracy<-ggplot(data = ModelsTable, aes(x=ModelType,y=Accuracy))
 gboth<-ggplot(data = ModelsTable, aes(x=Accuracy,y=ElapsedTime))
 
 gtime+geom_col(aes(fill=ModelType))
+```
+
+![](PracticalMachineLearningCourseProject_files/figure-html/PredictionValidationComparison-1.png)<!-- -->
+
+```r
 #In terms of time elapsed CART was the best among accurate models (we neglect LDA as it had bad accuracy)
 gaccuracy+geom_col(aes(fill=ModelType))
+```
+
+![](PracticalMachineLearningCourseProject_files/figure-html/PredictionValidationComparison-2.png)<!-- -->
+
+```r
 #In terms of Accuracy RF was the best, then treebag, CART and gbm are slightly less accurate.
 gboth+geom_point(size=5,aes(col=ModelType))+geom_label(label=ModelType,size=3,nudge_y=30)+scale_y_reverse()
-#In terms of both RF & treebag were a good trade accuracy/time elapsed tradeoff
+```
 
+![](PracticalMachineLearningCourseProject_files/figure-html/PredictionValidationComparison-3.png)<!-- -->
+
+```r
+#In terms of both RF & treebag were a good trade accuracy/time elapsed tradeoff
 ```
 
 # Predicting quiz 20 observations
 We will apply all our models then take a vote about each observations 
-```{r Quiz}
+
+```r
 #To be able to run predection on Quiz test set the name of outcome should be the same as it is training set and prediction models
 problem_id<- testingData$problem_id
 colnames(testingData)[colnames(testingData) == "problem_id"] <- "classe"
@@ -159,6 +216,57 @@ predtestingDataTotal$FinalVote<-apply(predtestingDataTotal,1,function(x) names(w
 QuizAnswer<-data.frame(problem_id=1:20,FinalModelVote=apply(predtestingDataTotal,1,function(x) names(which.max(table(x)))))
 #Printing predtestingDataTotal
 predtestingDataTotal
+```
+
+```
+##    problem_id GLMNET20 CART20 treebag20 RF20 gbm20 LDA20 FinalVote
+## 1           1        C      B         B    B     B     B         B
+## 2           2        A      A         A    A     A     A         A
+## 3           3        B      B         B    B     B     B         B
+## 4           4        A      A         A    A     A     A         A
+## 5           5        A      A         A    A     A     A         A
+## 6           6        E      E         E    E     E     E         E
+## 7           7        D      D         D    D     D     D         D
+## 8           8        D      A         B    B     B     D         B
+## 9           9        A      A         A    A     A     A         A
+## 10         10        A      A         A    A     A     A         A
+## 11         11        C      C         B    B     B     D         B
+## 12         12        A      C         C    C     C     A         C
+## 13         13        B      B         B    B     B     B         B
+## 14         14        A      A         A    A     A     A         A
+## 15         15        E      E         E    E     E     B         E
+## 16         16        E      E         E    E     E     A         E
+## 17         17        A      A         A    A     A     A         A
+## 18         18        B      B         B    B     B     B         B
+## 19         19        B      B         B    B     B     B         B
+## 20         20        B      B         B    B     B     B         B
+```
+
+```r
 #Printing Quiz Answer
 QuizAnswer
+```
+
+```
+##    problem_id FinalModelVote
+## 1           1              B
+## 2           2              A
+## 3           3              B
+## 4           4              A
+## 5           5              A
+## 6           6              E
+## 7           7              D
+## 8           8              B
+## 9           9              A
+## 10         10              A
+## 11         11              B
+## 12         12              C
+## 13         13              B
+## 14         14              A
+## 15         15              E
+## 16         16              E
+## 17         17              A
+## 18         18              B
+## 19         19              B
+## 20         20              B
 ```
