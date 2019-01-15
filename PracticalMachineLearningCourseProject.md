@@ -93,9 +93,12 @@ trainingData <- trainingData [,-RemoveCol]
 
 # Prediction study design:  
 Check course slide 7/8 in Prediction study design for reference:
+
 * 60% training
+
 * 20% testing
-* 20% validation
+
+* 20% validation (keeping to the last to train one time only)
 
 ```r
 inTrain<-createDataPartition(trainingData$classe,p=0.8,list = FALSE)
@@ -128,10 +131,32 @@ ElapsedTimeBoostgbm<-system.time(modelBoostgbm<-train(classe~.,data=training,met
 ElapsedTimeLDA<-system.time(modelLDA<-train(classe~.,data=training,method="lda",trControl=MyControl))[3]
 ```
 
-# Predicting on validation portion of data & finding models accuracy
+# Finding Accuracy of models from cross validation 
+
+```r
+#Cross validation accuracy (using each model)
+ModelType<-c("glmnet","CART","treebag","RF","gbm","LDA")
+AccuracyCV<-c(max(modelGLMNET$results$Accuracy),max(modelCART$results$Accuracy),max(modeltreebag$results$Accuracy),max(modelRF$results$Accuracy),max(modelBoostgbm$results$Accuracy),max(modelLDA$results$Accuracy))
+AccuracyCVTable<-data.frame(ModelType,AccuracyCV)
+#Each model cross validation accuracy
+AccuracyCVTable
+```
+
+```
+##   ModelType AccuracyCV
+## 1    glmnet  0.7385827
+## 2      CART  0.9558562
+## 3   treebag  0.9940761
+## 4        RF  0.9975160
+## 5       gbm  0.9869425
+## 6       LDA  0.7129122
+```
+
+# Predicting on validation portion of data & finding models accuracy (100% - out of sample error)
 1. Predicting validation set (using each model)
-2. Getting accuracy of each model by comparing (classe) prediction to real values in validation$calsse using Confusion matrix.  
-3. Creating comparison table between models to Evaluate the models we used.
+2. Getting accuracy of each model by comparing (classe) prediction to real values in validation$calsse using Confusion matrix.
+3. Comparing Accuracy we got in cross validation (AccuracyCV) while training the models with K-Folds, with Accuracy we get on validation set (Accuracy), We expect them to be almost the same.
+4. Creating comparison table between models to Evaluate the models we used.
 
 ```r
 #Predicting validation set (using each model)
@@ -150,8 +175,23 @@ Accuracy<-c(confusionMatrix(predGLMNET, validation$classe)$overall[1],
             confusionMatrix(predBoostgbm, validation$classe)$overall[1],
             confusionMatrix(predLDA, validation$classe)$overall[1])
 
+#Comparing cross validation accuracy with accuracy results in validation set prediction (we predict them to be almost equal)
+AccuracyCompare<-data.frame(AccuracyCVTable,Accuracy)
+AccuracyCompare
+```
+
+```
+##   ModelType AccuracyCV  Accuracy
+## 1    glmnet  0.7385827 0.7425440
+## 2      CART  0.9558562 0.9592149
+## 3   treebag  0.9940761 0.9959215
+## 4        RF  0.9975160 0.9979607
+## 5       gbm  0.9869425 0.9882743
+## 6       LDA  0.7129122 0.7160336
+```
+
+```r
 #Creating comparison table between models
-ModelType<-c("glmnet","CART","treebag","RF","gbm","LDA")
 ElapsedTime<-c(ElapsedTimeGLMNET, ElapsedTimeCART, ElapsedTimetreebag, ElapsedTimeRF, ElapsedTimeBoostgbm, ElapsedTimeLDA)
 ModelsTable<-data.frame(ModelType,Accuracy,ElapsedTime)
 ModelsTable
@@ -159,12 +199,12 @@ ModelsTable
 
 ```
 ##   ModelType  Accuracy ElapsedTime
-## 1    glmnet 0.7425440      259.48
-## 2      CART 0.9592149       11.69
-## 3   treebag 0.9959215       28.91
-## 4        RF 0.9979607      158.03
-## 5       gbm 0.9882743      198.44
-## 6       LDA 0.7160336        1.14
+## 1    glmnet 0.7425440      270.15
+## 2      CART 0.9592149       27.94
+## 3   treebag 0.9959215       77.22
+## 4        RF 0.9979607      174.05
+## 5       gbm 0.9882743      326.50
+## 6       LDA 0.7160336        2.44
 ```
 
 ```r
